@@ -21,19 +21,22 @@
 
 
 void setup() {
-  // put your setup code here, to run once:
+  // Set-up communications to DS1682 and serial console
   Wire.begin();
   Serial.begin(9600);
+
+  // Reset event count
+  resetEvents();
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  int event_count = getEventCount();
-
+  unsigned int event_count = getEventCount();
+  //Print event count every second
   Serial.println(event_count);
   delay(1000);
 }
 
+/* Return total number of events since last reset events*/
 unsigned int getEventCount()
 {
   Wire.beginTransmission(DS1682_ADDR);
@@ -48,8 +51,40 @@ unsigned int getEventCount()
   return event_count;
 }
 
+/* Zero event registers to restart counts */
+void resetEvents()
+{
+  set_register(DS1682_ADDR,EVENT_COUNTER,0);
+  delay(10);
+  set_register(DS1682_ADDR,EVENT_COUNTER+1,0);
+  delay(10);
+}
+
+/*******************************************/
+/* This global reset zeros all registers   */
+/* and makes config read only, CAUTION !!!!*/
+/*******************************************/
 void resetAll()
 {
+  Wire.beginTransmission(DS1682_ADDR);
+  Wire.write(CONFIG_REG);
+  Wire.requestFrom(DS1682_ADDR,1);   // Read CONFIG Reg
+  byte config = Wire.read();
+  Wire.endTransmission();
   
+  byte config_re = config | 1 << RE_BIT;
+  set_register(DS1682_ADDR,CONFIG_REG,config_re);
+  delay(10);
+  set_register(DS1682_ADDR,RST_REG,0x55);
+  delay(10);
+  set_register(DS1682_ADDR,RST_REG,0x55);
+  delay(10);
+}
+
+void set_register(byte address, unsigned char r, unsigned char v) {
+  Wire.beginTransmission(address);
+  Wire.write(r);
+  Wire.write(v);
+  Wire.endTransmission();
 }
 
