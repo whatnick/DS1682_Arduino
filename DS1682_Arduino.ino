@@ -27,12 +27,20 @@ void setup() {
 
   // Reset event count
   resetEvents();
+
+  // Reset elapsed time
+  resetElapsedTime();
 }
 
 void loop() {
   unsigned int event_count = getEventCount();
   //Print event count every second
   Serial.println(event_count);
+
+  unsigned long elapsed_time = getElapsedTime();
+  //Print event count every second
+  Serial.println(elapsed_time);
+  
   delay(1000);
 }
 
@@ -57,6 +65,36 @@ void resetEvents()
   set_register(DS1682_ADDR,EVENT_COUNTER,0);
   delay(10);
   set_register(DS1682_ADDR,EVENT_COUNTER+1,0);
+  delay(10);
+}
+
+/* Return total time elapsed*/
+unsigned long getElapsedTime()
+{
+  Wire.beginTransmission(DS1682_ADDR);
+  Wire.write(ETC_REG);      
+  Wire.requestFrom(DS1682_ADDR,4);   // Read all bytes
+  byte LB = Wire.read();        // Read Low Byte
+  byte LMB = Wire.read();        // Read Low Middle Byte
+  byte HMB = Wire.read();        // Read High Middle Byte
+  byte HB = Wire.read();        // Read High Byte
+  Wire.endTransmission();        // Finish transmission
+
+  unsigned long elapsed_time = HB << 24 | HMB << 16 | LMB << 8 | LB;
+
+  return elapsed_time;
+}
+
+/* Reset total time elapsed */
+void resetElapsedTime()
+{
+  set_register(DS1682_ADDR,ETC_REG,0);
+  delay(10);
+  set_register(DS1682_ADDR,ETC_REG+1,0);
+  delay(10);
+  set_register(DS1682_ADDR,ETC_REG+2,0);
+  delay(10);
+  set_register(DS1682_ADDR,ETC_REG+3,0);
   delay(10);
 }
 
